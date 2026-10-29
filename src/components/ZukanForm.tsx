@@ -1,6 +1,7 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { db, ELEMENTS, type Element, type ZukanEntry } from '../db'
 import { cropToBlob, loadImage, type CropRect } from '../lib/image'
+import { detailArtRect, detectElement, isDetailScreen, readZukanNo } from '../lib/detailScreen'
 import { IconCropper } from './IconCropper'
 import { MonsterIcon } from './MonsterIcon'
 
@@ -21,13 +22,37 @@ export function ZukanForm({ entry, onDone }: Props) {
   const [saved, setSaved] = useState('')
   const onRect = useCallback((r: CropRect) => setRect(r), [])
 
+  const [reading, setReading] = useState(false)
+  const [notice, setNotice] = useState('')
+  const initialRect = image && isDetailScreen(image) ? detailArtRect(image) : undefined
+
   const onFile = async (file: File | undefined) => {
     if (!file) return
     setError('')
+    setNotice('')
+    let img: HTMLImageElement
     try {
-      setImage(await loadImage(file))
+      img = await loadImage(file)
+      setImage(img)
     } catch (e) {
       setError((e as Error).message)
+      return
+    }
+    // モンスター詳細画面のスクショなら、属性と図鑑No.を自動で読み取る
+    if (!isDetailScreen(img)) return
+    const el = detectElement(img)
+    if (el) setElement(el)
+    setReading(true)
+    try {
+      const num = await readZukanNo(img)
+      if (num) setNo(String(num))
+      setNotice(
+        `詳細画面として読み取りました${num ? `（No.${num}` : '（No.は読めませんでした'}${el ? `・${el}属性` : ''}）。名前などは確認して入力してください。`,
+      )
+    } catch {
+      setNotice('図鑑No.の自動読み取りに失敗しました。手入力してください。')
+    } finally {
+      setReading(false)
     }
   }
 
@@ -65,7 +90,7 @@ export function ZukanForm({ entry, onDone }: Props) {
         <input type="file" accept="image/*" onChange={(e) => onFile(e.target.files?.[0])} />
       </label>
       {image ? (
-        <IconCropper key={image.src} image={image} onChange={onRect} />
+        <IconCropper key={image.src} image={image} initialRect={initialRect} onChange={onRect} />
       ) : (
         entry && (
           <div className="row">
@@ -109,6 +134,8 @@ export function ZukanForm({ entry, onDone }: Props) {
           ))}
         </div>
       </fieldset>
+      {reading && <p className="hint">読み取り中…（初回は少し時間がかかります）</p>}
+      {notice && <p className="hint">{notice}</p>}
       {error && <p className="error">{error}</p>}
       {saved && <p className="ok">{saved}</p>}
       <div className="row end">

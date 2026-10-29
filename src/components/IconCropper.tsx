@@ -3,15 +3,18 @@ import type { CropRect } from '../lib/image'
 
 interface Props {
   image: HTMLImageElement
+  /** 最初の枠。省略すると画像の中央に置く。 */
+  initialRect?: CropRect
   onChange: (rect: CropRect) => void
 }
 
 /** スクショ上で正方形の枠をドラッグしてアイコン部分を選ぶ */
-export function IconCropper({ image, onChange }: Props) {
+export function IconCropper({ image, initialRect, onChange }: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
   const minSide = Math.min(image.naturalWidth, image.naturalHeight)
   const [rect, setRect] = useState<CropRect>(() => {
+    if (initialRect) return initialRect
     const size = Math.round(minSide / 4)
     return { x: Math.round((image.naturalWidth - size) / 2), y: Math.round((image.naturalHeight - size) / 2), size }
   })
