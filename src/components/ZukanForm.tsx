@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { db, ELEMENTS, type Element, type ZukanEntry } from '../db'
 import { cropToBlob, loadImage, type CropRect } from '../lib/image'
 import { detailArtRect, detectElement, isDetailScreen, readZukanNo } from '../lib/detailScreen'
@@ -20,7 +20,13 @@ export function ZukanForm({ entry, onDone }: Props) {
   const [rarity, setRarity] = useState(entry?.rarity ?? 6)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState('')
+  const statusRef = useRef<HTMLDivElement>(null)
   const onRect = useCallback((r: CropRect) => setRect(r), [])
+
+  // 長いフォームでも結果が見えるよう、メッセージが出たら画面内に寄せる
+  useEffect(() => {
+    if (error || saved) statusRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [error, saved])
 
   const [reading, setReading] = useState(false)
   const [notice, setNotice] = useState('')
@@ -60,30 +66,34 @@ export function ZukanForm({ entry, onDone }: Props) {
     e.preventDefault()
     setError('')
     setSaved('')
-    const num = Number(no)
-    if (!Number.isInteger(num) || num <= 0) return setError('図鑑No.は1以上の整数で入力してください')
-    if (!name.trim()) return setError('名前を入力してください')
-    const icon = image && rect ? await cropToBlob(image, rect) : entry?.icon
-    if (!icon) return setError('画像をアップロードしてアイコンを選んでください')
-    if (num !== entry?.no && (await db.zukan.get(num))) return setError(`No.${num} はすでに図鑑にあります`)
+    try {
+      const num = Number(no)
+      if (!Number.isInteger(num) || num <= 0) return setError('図鑑No.は1以上の整数で入力してください')
+      if (!name.trim()) return setError('名前を入力してください')
+      const icon = image && rect ? await cropToBlob(image, rect) : entry?.icon
+      if (!icon) return setError('画像をアップロードしてアイコンを選んでください')
+      if (num !== entry?.no && (await db.zukan.get(num))) return setError(`No.${num} はすでに図鑑にあります`)
 
-    await db.transaction('rw', db.zukan, db.owned, async () => {
-      if (entry && entry.no !== num) {
-        await db.zukan.delete(entry.no)
-        await db.owned.where('no').equals(entry.no).modify({ no: num })
-      }
-      await db.zukan.put({ no: num, name: name.trim(), element, rarity, icon, createdAt: entry?.createdAt ?? Date.now() })
-    })
+      await db.transaction('rw', db.zukan, db.owned, async () => {
+        if (entry && entry.no !== num) {
+          await db.zukan.delete(entry.no)
+          await db.owned.where('no').equals(entry.no).modify({ no: num })
+        }
+        await db.zukan.put({ no: num, name: name.trim(), element, rarity, icon, createdAt: entry?.createdAt ?? Date.now() })
+      })
 
-    if (entry) return onDone()
-    // 同じスクショから続けて別のモンスターを切り出せるよう、画像は残す
-    setSaved(`No.${num} ${name.trim()} を登録しました`)
-    setNo(String(num + 1))
-    setName('')
+      if (entry) return onDone()
+      // 同じスクショから続けて別のモンスターを切り出せるよう、画像は残す
+      setSaved(`No.${num} ${name.trim()} を登録しました`)
+      setNo(String(num + 1))
+      setName('')
+    } catch (err) {
+      setError(`保存できませんでした: ${(err as Error).message}`)
+    }
   }
 
   return (
-    <form className="panel" onSubmit={submit}>
+    <form className="panel" onSubmit={submit} noValidate>
       <h2>{entry ? '図鑑を編集' : '図鑑に追加'}</h2>
       <label className="field">
         <span>スクショ・写真</span>
@@ -102,7 +112,7 @@ export function ZukanForm({ entry, onDone }: Props) {
       <div className="grid2">
         <label className="field">
           <span>図鑑No.</span>
-          <input inputMode="numeric" value={no} onChange={(e) => setNo(e.target.value)} required />
+          <input inputMode="numeric" value={no} onChange={(e) => setNo(e.target.value)} />
         </label>
         <label className="field">
           <span>レアリティ</span>
@@ -117,7 +127,7 @@ export function ZukanForm({ entry, onDone }: Props) {
       </div>
       <label className="field">
         <span>名前</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} required />
+        <input value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <fieldset className="field">
         <span>属性</span>
@@ -136,8 +146,10 @@ export function ZukanForm({ entry, onDone }: Props) {
       </fieldset>
       {reading && <p className="hint">読み取り中…（初回は少し時間がかかります）</p>}
       {notice && <p className="hint">{notice}</p>}
-      {error && <p className="error">{error}</p>}
-      {saved && <p className="ok">{saved}</p>}
+      <div ref={statusRef}>
+        {error && <p className="error">{error}</p>}
+        {saved && <p className="ok">{saved}</p>}
+      </div>
       <div className="row end">
         <button type="button" onClick={onDone}>
           {entry ? 'キャンセル' : '閉じる'}
