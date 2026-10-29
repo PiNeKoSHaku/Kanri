@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { db, ELEMENTS, type Element, type ZukanEntry } from '../db'
-import { cropToBlob, loadImage, type CropRect } from '../lib/image'
+import { cropToDataUrl, loadImage, type CropRect } from '../lib/image'
 import { detailArtRect, detectElement, isDetailScreen, readZukanNo } from '../lib/detailScreen'
 import { IconCropper } from './IconCropper'
 import { MonsterIcon } from './MonsterIcon'
@@ -70,7 +70,7 @@ export function ZukanForm({ entry, onDone }: Props) {
       const num = Number(no)
       if (!Number.isInteger(num) || num <= 0) return setError('図鑑No.は1以上の整数で入力してください')
       if (!name.trim()) return setError('名前を入力してください')
-      const icon = image && rect ? await cropToBlob(image, rect) : entry?.icon
+      const icon = image && rect ? cropToDataUrl(image, rect) : entry?.icon
       if (!icon) return setError('画像をアップロードしてアイコンを選んでください')
       if (num !== entry?.no && (await db.zukan.get(num))) return setError(`No.${num} はすでに図鑑にあります`)
 

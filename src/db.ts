@@ -9,7 +9,8 @@ export interface ZukanEntry {
   name: string
   element: Element
   rarity: number
-  icon: Blob
+  /** JPEGのdata URL。iOS SafariはIndexedDBへのBlob保存に失敗することがあるので文字列で持つ。 */
+  icon: string
   createdAt: number
 }
 
