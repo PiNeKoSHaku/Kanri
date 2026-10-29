@@ -1,1 +1,29 @@
 # Kanri
+
+モンスターストライクの所持モンスターを管理するWebアプリです。
+
+## できること
+
+- **図鑑**: ゲームの図鑑画面のスクショをアップロードし、枠を合わせてアイコンを切り出して登録します（図鑑No.・名前・属性・レアリティ）。同じスクショから続けて何体でも登録できます。
+- **所持**: 図鑑からモンスターを選んで所持に追加し、ラック（運極）・メモ・お気に入りを管理します。名前・図鑑No.・属性で絞り込めます。
+- **設定**: データをJSONで書き出し・復元できます。
+
+データはすべて端末のブラウザ内（IndexedDB）に保存され、サーバーには送られません。
+
+## 開発
+
+```sh
+npm install
+npm run dev     # 開発サーバー
+npm run build   # 本番ビルド (dist/)
+npm run lint
+```
+
+## 公開
+
+`main` に push すると GitHub Actions で GitHub Pages にデプロイされます。
+初回だけ、リポジトリの Settings → Pages → Source を「GitHub Actions」にしてください。
+
+## 構成
+
+Vite + React + TypeScript、Dexie (IndexedDB)。デスクトップ版は将来 Tauri で包む想定です。
