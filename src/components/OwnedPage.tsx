@@ -1,7 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { db, type OwnedMonster } from '../db'
-import { emptyFilter, matchesFilter } from '../lib/filter'
+import { emptyFilter, matchesOwnedFilter } from '../lib/filter'
+import { fruitLabel } from '../lib/fruits'
+import { monsterName } from '../lib/monster'
 import { Filters } from './Filters'
 import { MonsterIcon } from './MonsterIcon'
 import { OwnedEditor } from './OwnedEditor'
@@ -35,7 +37,7 @@ export function OwnedPage() {
   if (editing) return <OwnedEditor owned={editing} monster={byId.get(editing.monsterId)} onDone={() => setEditing(undefined)} />
 
   const shown = (owned ?? [])
-    .filter((o) => (!favOnly || o.favorite) && matchesFilter(byId.get(o.monsterId), filter))
+    .filter((o) => (!favOnly || o.favorite) && matchesOwnedFilter(byId.get(o.monsterId), o.fruits, filter))
     .sort((a, b) =>
       sort === 'no' ? noOf(a) - noOf(b) : sort === 'luck' ? b.luck - a.luck : b.createdAt - a.createdAt,
     )
@@ -74,7 +76,8 @@ export function OwnedPage() {
                 <button className="tile-main" onClick={() => setEditing(o)}>
                   <MonsterIcon monster={monster} />
                   <span className={`luck ${o.luck === 99 ? 'max' : ''}`}>{o.luck === 99 ? '運極' : `ラック${o.luck}`}</span>
-                  <span className="name">{monster?.name ?? '（図鑑に無い）'}</span>
+                  <span className="name">{monster ? monsterName(monster) : '（図鑑に無い）'}</span>
+                  {!!o.fruits?.length && <span className="fruits">{o.fruits.map(fruitLabel).join(' / ')}</span>}
                 </button>
                 <button
                   className={`fav ${o.favorite ? 'on' : ''}`}

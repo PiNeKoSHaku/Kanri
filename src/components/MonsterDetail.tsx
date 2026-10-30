@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db } from '../db'
+import { monsterName, UNNAMED } from '../lib/monster'
 import { MonsterForm } from './MonsterForm'
 import { MonsterIcon } from './MonsterIcon'
 import { PhotoAdder } from './PhotoAdder'
@@ -19,16 +20,30 @@ export function MonsterDetail({ id, onBack }: Props) {
   const [message, setMessage] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deletingPhoto, setDeletingPhoto] = useState<number>()
+  // 写真から読み取った名前の候補。選ぶと編集画面にその名前が入る
+  const [candidates, setCandidates] = useState<string[]>([])
+  const [draftName, setDraftName] = useState<string>()
 
   if (monster === undefined) return null
   if (monster === null || !db.isOpen()) return <button onClick={onBack}>← 図鑑に戻る</button>
-  if (mode === 'edit') return <MonsterForm monster={monster} onDone={() => setMode('view')} />
+  if (mode === 'edit')
+    return (
+      <MonsterForm
+        monster={monster}
+        initialName={draftName}
+        onDone={() => {
+          setDraftName(undefined)
+          setMode('view')
+        }}
+      />
+    )
   if (mode === 'photo')
     return (
       <PhotoAdder
         monster={monster}
-        onDone={(notice) => {
+        onDone={(notice, names) => {
           if (notice) setMessage(notice)
+          if (names) setCandidates(names)
           setMode('view')
         }}
       />
@@ -59,7 +74,7 @@ export function MonsterDetail({ id, onBack }: Props) {
       <div className="row">
         <MonsterIcon monster={monster} size={88} />
         <div>
-          <h2>{monster.name}</h2>
+          <h2>{monsterName(monster)}</h2>
           <div className="hint">{info.length ? info.join(' / ') : 'No.・属性は未設定（詳細画面の写真を追加すると読み取ります）'}</div>
         </div>
       </div>
@@ -71,13 +86,34 @@ export function MonsterDetail({ id, onBack }: Props) {
         <button onClick={() => setMode('edit')}>編集</button>
       </div>
       {message && <p className="ok">{message}</p>}
+      {candidates.length > 0 && !monster.name && (
+        <div className="panel">
+          <strong>名前の候補</strong>
+          <p className="hint">写真から読み取った文字です。間違いを含むので、近いものを選んだあと、編集画面で直してください。</p>
+          <div className="chips">
+            {candidates.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className="chip"
+                onClick={() => {
+                  setDraftName(c)
+                  setMode('edit')
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {photos && photos.length === 0 && (
         <p className="empty">まだ写真がありません。ゲームの詳細画面のスクショを追加できます。</p>
       )}
       <div className="photos">
         {photos?.map((p) => (
           <figure key={p.id}>
-            <img src={p.image} alt={`${monster.name}の写真`} />
+            <img src={p.image} alt={`${monster.name || UNNAMED}の写真`} />
             {deletingPhoto === p.id ? (
               <div className="row end">
                 <button onClick={() => setDeletingPhoto(undefined)}>やめる</button>

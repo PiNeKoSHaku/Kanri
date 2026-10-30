@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { db, type Monster, type OwnedMonster } from '../db'
+import { db, type Fruit, type Monster, type OwnedMonster } from '../db'
+import { FruitSlot } from './FruitSlot'
+import { MAX_FRUIT_SLOTS } from '../lib/fruits'
+import { monsterName } from '../lib/monster'
 import { MonsterIcon } from './MonsterIcon'
 
 interface Props {
@@ -12,9 +15,11 @@ export function OwnedEditor({ owned, monster, onDone }: Props) {
   const [luck, setLuck] = useState(owned.luck)
   const [memo, setMemo] = useState(owned.memo)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // 実の枠。まだ何もつけていなければ、空の枠を2つ出す（獣神化したキャラの枠の数）
+  const [fruits, setFruits] = useState<Fruit[]>(owned.fruits?.length ? owned.fruits : [{ name: '' }, { name: '' }])
 
   const save = async () => {
-    await db.owned.update(owned.id, { luck, memo })
+    await db.owned.update(owned.id, { luck, memo, fruits: fruits.filter((f) => f.name.trim()).map((f) => ({ ...f, name: f.name.trim() })) })
     onDone()
   }
   const remove = async () => {
@@ -28,7 +33,7 @@ export function OwnedEditor({ owned, monster, onDone }: Props) {
         <MonsterIcon monster={monster} size={72} />
         <div>
           {monster?.no !== undefined && <div className="no">No.{monster.no}</div>}
-          <strong>{monster?.name ?? '（図鑑に無い）'}</strong>
+          <strong>{monster ? monsterName(monster) : '（図鑑に無い）'}</strong>
         </div>
       </div>
       <label className="field">
@@ -46,8 +51,25 @@ export function OwnedEditor({ owned, monster, onDone }: Props) {
           </button>
         </div>
       </label>
+      <fieldset className="field">
+        <span>わくわくの実（{fruits.filter((f) => f.name.trim()).length}/{fruits.length}枠）</span>
+        {fruits.map((f, i) => (
+          <FruitSlot
+            key={i}
+            index={i}
+            fruit={f}
+            onChange={(next) => setFruits((all) => all.map((x, j) => (j === i ? next : x)))}
+            onRemove={() => setFruits((all) => all.filter((_, j) => j !== i))}
+          />
+        ))}
+        {fruits.length < MAX_FRUIT_SLOTS && (
+          <button type="button" onClick={() => setFruits((all) => [...all, { name: '' }])}>
+            ＋ 枠を追加
+          </button>
+        )}
+      </fieldset>
       <label className="field">
-        <span>メモ（わくわくの実、用途など）</span>
+        <span>メモ（用途など）</span>
         <textarea rows={3} value={memo} onChange={(e) => setMemo(e.target.value)} />
       </label>
       <div className="row between">
