@@ -1,13 +1,13 @@
-import type { ZukanEntry } from '../db'
+import type { Monster } from '../db'
 
-export function MonsterIcon({ entry, size = 64 }: { entry: ZukanEntry | undefined; size?: number }) {
+export function MonsterIcon({ monster, size = 64 }: { monster: Monster | undefined; size?: number }) {
   return (
     <span
-      className={`icon el-${entry?.element ?? 'none'}`}
+      className={`icon el-${monster?.element ?? 'none'}`}
       style={{ width: size, height: size }}
-      title={entry ? `No.${entry.no} ${entry.name}` : '図鑑に無いモンスター'}
+      title={monster ? monster.name : '図鑑に無いモンスター'}
     >
-      {entry ? <img src={entry.icon} alt={entry.name} /> : '?'}
+      {monster?.icon ? <img src={monster.icon} alt={monster.name} /> : '?'}
     </span>
   )
 }

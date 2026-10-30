@@ -149,3 +149,9 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   background: var(--accent); border: 2px solid #fff; border-radius: 6px 0 0 0; cursor: nwse-resize;
 }
 .cropper-box img { border-radius: 8px; }
+.cropper-handle.tl { right: auto; bottom: auto; left: 0; top: 0; border-radius: 0 0 6px 0; cursor: nwse-resize; }
+.detail { display: flex; flex-direction: column; gap: 12px; }
+.detail h2 { margin: 0; }
+.photos { display: flex; flex-direction: column; gap: 16px; }
+.photos figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.photos img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; }

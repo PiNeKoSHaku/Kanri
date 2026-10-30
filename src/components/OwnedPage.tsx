@@ -11,8 +11,8 @@ type Sort = 'new' | 'no' | 'luck'
 
 export function OwnedPage() {
   const owned = useLiveQuery(() => db.owned.toArray(), [])
-  const zukan = useLiveQuery(() => db.zukan.toArray(), [])
-  const byNo = useMemo(() => new Map(zukan?.map((z) => [z.no, z])), [zukan])
+  const monsters = useLiveQuery(() => db.monsters.toArray(), [])
+  const byId = useMemo(() => new Map(monsters?.map((m) => [m.id, m])), [monsters])
   const [filter, setFilter] = useState(emptyFilter)
   const [sort, setSort] = useState<Sort>('new')
   const [favOnly, setFavOnly] = useState(false)
@@ -24,21 +24,22 @@ export function OwnedPage() {
       <>
         <button onClick={() => setPicking(false)}>← 所持一覧に戻る</button>
         <ZukanPage
-          onPick={async (entry) => {
-            const id = await db.owned.add({ no: entry.no, luck: 1, favorite: false, memo: '', createdAt: Date.now() })
+          onPick={async (monster) => {
+            const id = await db.owned.add({ monsterId: monster.id, luck: 1, favorite: false, memo: '', createdAt: Date.now() })
             setPicking(false)
             setEditing(await db.owned.get(id))
           }}
         />
       </>
     )
-  if (editing) return <OwnedEditor owned={editing} entry={byNo.get(editing.no)} onDone={() => setEditing(undefined)} />
+  if (editing) return <OwnedEditor owned={editing} monster={byId.get(editing.monsterId)} onDone={() => setEditing(undefined)} />
 
   const shown = (owned ?? [])
-    .filter((o) => (!favOnly || o.favorite) && matchesFilter(byNo.get(o.no), filter))
+    .filter((o) => (!favOnly || o.favorite) && matchesFilter(byId.get(o.monsterId), filter))
     .sort((a, b) =>
-      sort === 'no' ? a.no - b.no : sort === 'luck' ? b.luck - a.luck : b.createdAt - a.createdAt,
+      sort === 'no' ? noOf(a) - noOf(b) : sort === 'luck' ? b.luck - a.luck : b.createdAt - a.createdAt,
     )
+  const noOf = (o: OwnedMonster) => byId.get(o.monsterId)?.no ?? Infinity
   const maxLuck = owned?.filter((o) => o.luck === 99).length ?? 0
 
   return (
@@ -66,14 +67,14 @@ export function OwnedPage() {
       {owned && owned.length === 0 && <p className="empty">「所持を追加」から図鑑のモンスターを選んで登録します。</p>}
       <ul className="tiles">
         {shown.map((o) => {
-          const entry = byNo.get(o.no)
+          const monster = byId.get(o.monsterId)
           return (
             <li key={o.id}>
               <div className="tile">
                 <button className="tile-main" onClick={() => setEditing(o)}>
-                  <MonsterIcon entry={entry} />
+                  <MonsterIcon monster={monster} />
                   <span className={`luck ${o.luck === 99 ? 'max' : ''}`}>{o.luck === 99 ? '運極' : `ラック${o.luck}`}</span>
-                  <span className="name">{entry?.name ?? `No.${o.no}`}</span>
+                  <span className="name">{monster?.name ?? '（図鑑に無い）'}</span>
                 </button>
                 <button
                   className={`fav ${o.favorite ? 'on' : ''}`}

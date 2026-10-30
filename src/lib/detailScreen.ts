@@ -91,8 +91,8 @@ export async function readZukanNo(img: HTMLImageElement): Promise<number | undef
   })
   try {
     const { data } = await worker.recognize(canvas)
-    const m = data.text.match(/\d{1,5}/)
-    return m ? Number(m[0]) : undefined
+    const m = data.text.match(/No\.?\s*(\d{1,5})/i)
+    return m ? Number(m[1]) : undefined
   } finally {
     await worker.terminate()
   }
