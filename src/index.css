@@ -129,3 +129,23 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); cursor: move;
 }
 .cropper-box { overflow: hidden; border-radius: 8px; }
+
+.cropper-tools {
+  position: sticky; top: 52px; z-index: 1;
+  display: flex; gap: 12px; align-items: center;
+  padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+}
+.cropper-preview { width: 96px; height: 96px; flex: none; border-radius: 10px; border: 3px solid var(--accent); background: var(--bg); }
+.cropper-controls { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; }
+.nudge-pad { display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 28px); gap: 2px; }
+.nudge-pad > :nth-child(2) { grid-column: 2; grid-row: 1; }
+.nudge-pad > :nth-child(4) { grid-column: 1; grid-row: 2; }
+.nudge-pad > :nth-child(6) { grid-column: 3; grid-row: 2; }
+.nudge-pad > :nth-child(8) { grid-column: 2; grid-row: 3; }
+.nudge { padding: 0 10px; min-width: 40px; min-height: 28px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.nudge-pad .nudge { padding: 0; width: 100%; height: 100%; }
+.cropper-handle {
+  position: absolute; right: 0; bottom: 0; width: 28px; height: 28px;
+  background: var(--accent); border: 2px solid #fff; border-radius: 6px 0 0 0; cursor: nwse-resize;
+}
+.cropper-box img { border-radius: 8px; }
