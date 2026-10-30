@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { db, ELEMENTS, type Element, type ZukanEntry } from '../db'
 import { cropToDataUrl, loadImage, type CropRect } from '../lib/image'
-import { detailArtRect, detectElement, isDetailScreen, readZukanNo } from '../lib/detailScreen'
+import { detailArtRect, detectElement, isDetailScreen, listGrid, listIconRect, readZukanNo } from '../lib/detailScreen'
 import { IconCropper } from './IconCropper'
 import { MonsterIcon } from './MonsterIcon'
 
@@ -30,37 +30,56 @@ export function ZukanForm({ entry, onDone }: Props) {
 
   const [reading, setReading] = useState(false)
   const [notice, setNotice] = useState('')
-  const initialRect = image && isDetailScreen(image) ? detailArtRect(image) : undefined
+  // スマホの縦長スクショなら、画面の種類に合わせた初期の枠を使う
+  const [kind, setKind] = useState<'list' | 'detail'>('list')
+  const [advance, setAdvance] = useState(0)
+  const preset = image && isDetailScreen(image) ? kind : undefined
+  const initialRect = !image
+    ? undefined
+    : preset === 'detail'
+      ? detailArtRect(image)
+      : preset === 'list'
+        ? listIconRect(image)
+        : undefined
+  const grid = image && preset === 'list' ? listGrid(image) : undefined
 
   const onFile = async (file: File | undefined) => {
     if (!file) return
     setError('')
     setNotice('')
-    let img: HTMLImageElement
     try {
-      img = await loadImage(file)
-      setImage(img)
+      setImage(await loadImage(file))
     } catch (e) {
       setError((e as Error).message)
-      return
-    }
-    // モンスター詳細画面のスクショなら、属性と図鑑No.を自動で読み取る
-    if (!isDetailScreen(img)) return
-    const el = detectElement(img)
-    if (el) setElement(el)
-    setReading(true)
-    try {
-      const num = await readZukanNo(img)
-      if (num) setNo(String(num))
-      setNotice(
-        `詳細画面として読み取りました${num ? `（No.${num}` : '（No.は読めませんでした'}${el ? `・${el}属性` : ''}）。名前などは確認して入力してください。`,
-      )
-    } catch {
-      setNotice('図鑑No.の自動読み取りに失敗しました。手入力してください。')
-    } finally {
-      setReading(false)
     }
   }
+
+  // モンスター詳細画面のスクショなら、属性と図鑑No.を自動で読み取る
+  useEffect(() => {
+    if (!image || preset !== 'detail') return
+    let cancelled = false
+    const run = async () => {
+      const el = detectElement(image)
+      if (el) setElement(el)
+      setReading(true)
+      try {
+        const num = await readZukanNo(image)
+        if (cancelled) return
+        if (num) setNo(String(num))
+        setNotice(
+          `詳細画面として読み取りました${num ? `（No.${num}` : '（No.は読めませんでした'}${el ? `・${el}属性` : ''}）。名前などは確認して入力してください。`,
+        )
+      } catch {
+        if (!cancelled) setNotice('図鑑No.の自動読み取りに失敗しました。手入力してください。')
+      } finally {
+        if (!cancelled) setReading(false)
+      }
+    }
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [image, preset])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -85,8 +104,14 @@ export function ZukanForm({ entry, onDone }: Props) {
       if (entry) return onDone()
       // 同じスクショから続けて別のモンスターを切り出せるよう、画像は残す
       setSaved(`No.${num} ${name.trim()} を登録しました`)
-      setNo(String(num + 1))
       setName('')
+      if (grid) {
+        // 一覧画面は番号が飛び飛びなので、枠を次のアイコンへ進めて番号は空にする
+        setNo('')
+        setAdvance((n) => n + 1)
+      } else {
+        setNo(String(num + 1))
+      }
     } catch (err) {
       setError(`保存できませんでした: ${(err as Error).message}`)
     }
@@ -100,7 +125,29 @@ export function ZukanForm({ entry, onDone }: Props) {
         <input type="file" accept="image/*" onChange={(e) => onFile(e.target.files?.[0])} />
       </label>
       {image ? (
-        <IconCropper key={image.src} image={image} initialRect={initialRect} onChange={onRect} />
+        <>
+          {isDetailScreen(image) && (
+            <fieldset className="field">
+              <span>スクショの種類</span>
+              <div className="chips">
+                <button type="button" className={`chip on-accent ${kind === 'list' ? 'on' : ''}`} onClick={() => setKind('list')}>
+                  図鑑一覧
+                </button>
+                <button type="button" className={`chip on-accent ${kind === 'detail' ? 'on' : ''}`} onClick={() => setKind('detail')}>
+                  詳細画面
+                </button>
+              </div>
+            </fieldset>
+          )}
+          <IconCropper
+            key={`${image.src}-${preset}`}
+            image={image}
+            initialRect={initialRect}
+            grid={grid}
+            advanceToken={advance}
+            onChange={onRect}
+          />
+        </>
       ) : (
         entry && (
           <div className="row">
@@ -144,8 +191,8 @@ export function ZukanForm({ entry, onDone }: Props) {
           ))}
         </div>
       </fieldset>
-      {reading && <p className="hint">読み取り中…（初回は少し時間がかかります）</p>}
-      {notice && <p className="hint">{notice}</p>}
+      {preset === 'detail' && reading && <p className="hint">読み取り中…（初回は少し時間がかかります）</p>}
+      {preset === 'detail' && notice && <p className="hint">{notice}</p>}
       <div ref={statusRef}>
         {error && <p className="error">{error}</p>}
         {saved && <p className="ok">{saved}</p>}

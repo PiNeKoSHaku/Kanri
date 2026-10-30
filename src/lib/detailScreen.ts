@@ -17,6 +17,18 @@ export function detailArtRect(img: HTMLImageElement): CropRect {
   return { x: Math.round(0.11 * w), y: Math.round(0.357 * w), size: Math.round(0.78 * w) }
 }
 
+/** 図鑑一覧画面（アイコンが5列に並ぶ画面）の、いちばん上の行の左端のアイコン。ラベルの「No.」にかからない正方形。 */
+export function listIconRect(img: HTMLImageElement): CropRect {
+  const w = img.naturalWidth
+  return { x: Math.round(0.0665 * w), y: Math.round(0.768 * w), size: Math.round(0.13 * w) }
+}
+
+/** 図鑑一覧画面でアイコンが並ぶ間隔（px）。列の数と、横・縦の間隔。 */
+export function listGrid(img: HTMLImageElement): { cols: number; dx: number; dy: number } {
+  const w = img.naturalWidth
+  return { cols: 5, dx: 0.1815 * w, dy: 0.1777 * w }
+}
+
 /** 属性アイコン（左下の丸）の色から属性を判定する */
 export function detectElement(img: HTMLImageElement): Element | undefined {
   const w = img.naturalWidth

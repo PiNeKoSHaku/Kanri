@@ -149,3 +149,5 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   background: var(--accent); border: 2px solid #fff; border-radius: 6px 0 0 0; cursor: nwse-resize;
 }
 .cropper-box img { border-radius: 8px; }
+
+.chip.on-accent.on { background: var(--accent); }
