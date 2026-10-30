@@ -25,6 +25,12 @@ export interface Photo {
   createdAt: number
 }
 
+/** わくわくの実1つ。等級（特級Lなど）は任意。 */
+export interface Fruit {
+  name: string
+  grade?: string
+}
+
 /** 所持モンスター1体。同じモンスターを複数持てる。 */
 export interface OwnedMonster {
   id: number
@@ -32,6 +38,8 @@ export interface OwnedMonster {
   luck: number
   favorite: boolean
   memo: string
+  /** つけているわくわくの実（枠の数はキャラによって違う） */
+  fruits?: Fruit[]
   createdAt: number
 }
 
