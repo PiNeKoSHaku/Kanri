@@ -5,6 +5,10 @@ interface Props {
   image: HTMLImageElement
   /** 最初の枠。省略すると画像の中央に置く。 */
   initialRect?: CropRect
+  /** アイコンが格子状に並ぶ画面なら、その並び（px）。前後のアイコンへ枠を動かせる。 */
+  grid?: { cols: number; dx: number; dy: number }
+  /** 値が増えるたびに、枠を次のアイコンへ進める（保存のあと用）。 */
+  advanceToken?: number
   onChange: (rect: CropRect) => void
 }
 
@@ -42,7 +46,7 @@ function RepeatButton({ onStep, label, children }: { onStep: () => void; label: 
 }
 
 /** スクショ上で正方形の枠を動かして、アイコンにする範囲を選ぶ */
-export function IconCropper({ image, initialRect, onChange }: Props) {
+export function IconCropper({ image, initialRect, grid, advanceToken = 0, onChange }: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
   const previewRef = useRef<HTMLCanvasElement>(null)
   const [scale, setScale] = useState(1)
@@ -116,6 +120,31 @@ export function IconCropper({ image, initialRect, onChange }: Props) {
       const size = Math.min(maxSize, Math.max(minSize, r.size + delta))
       return clampPos({ size, x: r.x + (r.size - size) / 2, y: r.y + (r.size - size) / 2 })
     })
+  /** 格子状に並ぶアイコンの、前（-1）または次（1）へ。行の端では隣の行へ折り返す。 */
+  const stepGrid = useCallback(
+    (dir: 1 | -1) => {
+      if (!grid) return
+      setRect((r) => {
+        let col = Math.round((r.x - start.x) / grid.dx) + dir
+        let y = r.y
+        if (col >= grid.cols) {
+          col = 0
+          y += grid.dy
+        } else if (col < 0) {
+          col = grid.cols - 1
+          y -= grid.dy
+        }
+        return clampPos({ ...r, x: start.x + col * grid.dx, y })
+      })
+    },
+    [grid, start.x, clampPos],
+  )
+  const lastToken = useRef(advanceToken)
+  useEffect(() => {
+    if (advanceToken === lastToken.current) return
+    lastToken.current = advanceToken
+    stepGrid(1)
+  }, [advanceToken, stepGrid])
   const moveBy = (dx: number, dy: number) => setRect((r) => clampPos({ ...r, x: r.x + dx, y: r.y + dy }))
   // 1回の操作量は枠の大きさに合わせる（小さい枠ほど細かく動く）
   const step = Math.max(1, Math.round(rect.size / 100))
@@ -156,6 +185,16 @@ export function IconCropper({ image, initialRect, onChange }: Props) {
               リセット
             </button>
           </div>
+          {grid && (
+            <div className="row">
+              <button type="button" onClick={() => stepGrid(-1)}>
+                ◀ 前のアイコン
+              </button>
+              <button type="button" onClick={() => stepGrid(1)}>
+                次のアイコン ▶
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="cropper-box" ref={boxRef}>
