@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db, type Monster } from '../db'
 import { byNoThenId, emptyFilter, matchesFilter } from '../lib/filter'
+import { monsterName } from '../lib/monster'
 import { Filters } from './Filters'
 import { MonsterDetail } from './MonsterDetail'
 import { MonsterForm } from './MonsterForm'
@@ -33,7 +34,7 @@ export function ZukanPage({ onPick }: Props) {
       </div>
       <Filters value={filter} onChange={setFilter} />
       {monsters && monsters.length === 0 && (
-        <p className="empty">まだ図鑑が空です。ゲームの図鑑一覧のスクショから、名前とアイコンを登録しましょう。</p>
+        <p className="empty">まだ図鑑が空です。ゲームの図鑑一覧のスクショから、アイコンを登録しましょう。名前は、あとで詳細画面の写真から読み取れます。</p>
       )}
       <ul className="tiles">
         {shown.map((m) => (
@@ -41,7 +42,7 @@ export function ZukanPage({ onPick }: Props) {
             <button className="tile" onClick={() => (onPick ? onPick(m) : setOpenId(m.id))}>
               <MonsterIcon monster={m} />
               {m.no !== undefined && <span className="no">No.{m.no}</span>}
-              <span className="name">{m.name}</span>
+              <span className={`name ${m.name ? '' : 'unnamed'}`}>{monsterName(m)}</span>
             </button>
           </li>
         ))}

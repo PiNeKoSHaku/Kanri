@@ -157,3 +157,4 @@ button.danger { border-color: var(--danger); color: var(--danger); }
 .photos img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); display: block; }
 
 .chip.on-accent.on { background: var(--accent); }
+.tile .name.unnamed { color: var(--muted); }

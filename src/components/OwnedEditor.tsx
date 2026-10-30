@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { db, type Monster, type OwnedMonster } from '../db'
+import { monsterName } from '../lib/monster'
 import { MonsterIcon } from './MonsterIcon'
 
 interface Props {
@@ -28,7 +29,7 @@ export function OwnedEditor({ owned, monster, onDone }: Props) {
         <MonsterIcon monster={monster} size={72} />
         <div>
           {monster?.no !== undefined && <div className="no">No.{monster.no}</div>}
-          <strong>{monster?.name ?? '（図鑑に無い）'}</strong>
+          <strong>{monster ? monsterName(monster) : '（図鑑に無い）'}</strong>
         </div>
       </div>
       <label className="field">

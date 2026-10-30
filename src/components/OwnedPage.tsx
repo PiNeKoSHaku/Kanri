@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { db, type OwnedMonster } from '../db'
 import { emptyFilter, matchesFilter } from '../lib/filter'
+import { monsterName } from '../lib/monster'
 import { Filters } from './Filters'
 import { MonsterIcon } from './MonsterIcon'
 import { OwnedEditor } from './OwnedEditor'
@@ -74,7 +75,7 @@ export function OwnedPage() {
                 <button className="tile-main" onClick={() => setEditing(o)}>
                   <MonsterIcon monster={monster} />
                   <span className={`luck ${o.luck === 99 ? 'max' : ''}`}>{o.luck === 99 ? '運極' : `ラック${o.luck}`}</span>
-                  <span className="name">{monster?.name ?? '（図鑑に無い）'}</span>
+                  <span className="name">{monster ? monsterName(monster) : '（図鑑に無い）'}</span>
                 </button>
                 <button
                   className={`fav ${o.favorite ? 'on' : ''}`}

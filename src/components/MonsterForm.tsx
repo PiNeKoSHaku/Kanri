@@ -8,13 +8,15 @@ import { MonsterIcon } from './MonsterIcon'
 interface Props {
   /** 編集時の既存のモンスター。無ければ新規登録（名前とアイコンだけ）。 */
   monster?: Monster
+  /** 編集の名前欄に最初に入れる文字（読み取った名前の候補を選んだとき） */
+  initialName?: string
   onDone: () => void
 }
 
-export function MonsterForm({ monster, onDone }: Props) {
+export function MonsterForm({ monster, initialName, onDone }: Props) {
   const [image, setImage] = useState<HTMLImageElement>()
   const [rect, setRect] = useState<CropRect>()
-  const [name, setName] = useState(monster?.name ?? '')
+  const [name, setName] = useState(initialName ?? monster?.name ?? '')
   const [no, setNo] = useState(monster?.no === undefined ? '' : String(monster.no))
   const [element, setElement] = useState<Element | undefined>(monster?.element)
   const [rarity, setRarity] = useState<number | undefined>(monster?.rarity)
@@ -25,6 +27,7 @@ export function MonsterForm({ monster, onDone }: Props) {
   // スマホの縦長スクショなら、画面の種類に合わせた初期の枠を使う
   const [kind, setKind] = useState<'list' | 'detail'>('list')
   const [advance, setAdvance] = useState(0)
+  const [count, setCount] = useState(0)
   const preset = image && isDetailScreen(image) ? kind : undefined
   const initialRect = !image
     ? undefined
@@ -56,7 +59,6 @@ export function MonsterForm({ monster, onDone }: Props) {
     setSaved('')
     try {
       const trimmed = name.trim()
-      if (!trimmed) return setError('名前を入力してください')
       const icon = image && rect ? cropToDataUrl(image, rect) : monster?.icon
       if (!icon) return setError('画像をアップロードしてアイコンを選んでください')
       let noValue: number | undefined
@@ -69,10 +71,10 @@ export function MonsterForm({ monster, onDone }: Props) {
         await db.monsters.put({ ...monster, name: trimmed, icon, no: noValue, element, rarity })
         return onDone()
       }
-      await db.monsters.add({ name: trimmed, icon, createdAt: Date.now() } as Monster)
-      // 同じスクショから続けて登録できるよう、画像は残して名前だけ空にする
-      setSaved(`${trimmed} を登録しました`)
-      setName('')
+      await db.monsters.add({ name: '', icon, createdAt: Date.now() } as Monster)
+      // 同じスクショから続けて登録できるよう、画像は残す
+      setSaved(`アイコンを登録しました（${count + 1}体目）`)
+      setCount((n) => n + 1)
       if (grid) setAdvance((n) => n + 1)
     } catch (err) {
       setError(`保存できませんでした: ${(err as Error).message}`)
@@ -81,7 +83,7 @@ export function MonsterForm({ monster, onDone }: Props) {
 
   return (
     <form className="panel" onSubmit={submit} noValidate>
-      <h2>{monster ? '図鑑を編集' : '図鑑に追加'}</h2>
+      <h2>{monster ? '図鑑を編集' : '図鑑にアイコンを追加'}</h2>
       <label className="field">
         <span>{monster ? 'アイコンを変えるときだけ、スクショ・写真' : 'スクショ・写真'}</span>
         <input type="file" accept="image/*" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -117,12 +119,12 @@ export function MonsterForm({ monster, onDone }: Props) {
           </div>
         )
       )}
-      <label className="field">
-        <span>名前</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-      </label>
       {monster && (
         <>
+          <label className="field">
+            <span>名前</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
           <div className="grid2">
             <label className="field">
               <span>図鑑No.（任意）</span>
