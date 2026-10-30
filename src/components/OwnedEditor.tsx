@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { db, type OwnedMonster, type ZukanEntry } from '../db'
+import { db, type Monster, type OwnedMonster } from '../db'
 import { MonsterIcon } from './MonsterIcon'
 
 interface Props {
   owned: OwnedMonster
-  entry: ZukanEntry | undefined
+  monster: Monster | undefined
   onDone: () => void
 }
 
-export function OwnedEditor({ owned, entry, onDone }: Props) {
+export function OwnedEditor({ owned, monster, onDone }: Props) {
   const [luck, setLuck] = useState(owned.luck)
   const [memo, setMemo] = useState(owned.memo)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -25,10 +25,10 @@ export function OwnedEditor({ owned, entry, onDone }: Props) {
   return (
     <div className="panel">
       <div className="row">
-        <MonsterIcon entry={entry} size={72} />
+        <MonsterIcon monster={monster} size={72} />
         <div>
-          <div className="no">No.{owned.no}</div>
-          <strong>{entry?.name ?? '（図鑑に無い）'}</strong>
+          {monster?.no !== undefined && <div className="no">No.{monster.no}</div>}
+          <strong>{monster?.name ?? '（図鑑に無い）'}</strong>
         </div>
       </div>
       <label className="field">

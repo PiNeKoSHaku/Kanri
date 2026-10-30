@@ -1,46 +1,47 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
-import { db, type ZukanEntry } from '../db'
-import { emptyFilter, matchesFilter } from '../lib/filter'
+import { db, type Monster } from '../db'
+import { byNoThenId, emptyFilter, matchesFilter } from '../lib/filter'
 import { Filters } from './Filters'
+import { MonsterDetail } from './MonsterDetail'
+import { MonsterForm } from './MonsterForm'
 import { MonsterIcon } from './MonsterIcon'
-import { ZukanForm } from './ZukanForm'
 
 interface Props {
-  /** 指定すると選択モード。タップしたエントリを返す。 */
-  onPick?: (entry: ZukanEntry) => void
+  /** 指定すると選択モード。タップしたモンスターを返す。 */
+  onPick?: (monster: Monster) => void
 }
 
 export function ZukanPage({ onPick }: Props) {
-  const entries = useLiveQuery(() => db.zukan.orderBy('no').toArray(), [])
+  const monsters = useLiveQuery(() => db.monsters.toArray(), [])
   const [filter, setFilter] = useState(emptyFilter)
   const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<ZukanEntry>()
+  const [openId, setOpenId] = useState<number>()
 
-  if (adding) return <ZukanForm onDone={() => setAdding(false)} />
-  if (editing) return <ZukanForm entry={editing} onDone={() => setEditing(undefined)} />
+  if (adding) return <MonsterForm onDone={() => setAdding(false)} />
+  if (openId !== undefined) return <MonsterDetail id={openId} onBack={() => setOpenId(undefined)} />
 
-  const shown = entries?.filter((e) => matchesFilter(e, filter)) ?? []
+  const shown = monsters?.filter((m) => matchesFilter(m, filter)).sort(byNoThenId) ?? []
 
   return (
     <section>
       <div className="row between">
-        <h2>{onPick ? '図鑑から選ぶ' : `図鑑 (${entries?.length ?? 0})`}</h2>
+        <h2>{onPick ? '図鑑から選ぶ' : `図鑑 (${monsters?.length ?? 0})`}</h2>
         <button className="primary" onClick={() => setAdding(true)}>
           ＋ 図鑑に追加
         </button>
       </div>
       <Filters value={filter} onChange={setFilter} />
-      {entries && entries.length === 0 && (
-        <p className="empty">まだ図鑑が空です。ゲームの図鑑画面のスクショから追加しましょう。</p>
+      {monsters && monsters.length === 0 && (
+        <p className="empty">まだ図鑑が空です。ゲームの図鑑一覧のスクショから、名前とアイコンを登録しましょう。</p>
       )}
       <ul className="tiles">
-        {shown.map((e) => (
-          <li key={e.no}>
-            <button className="tile" onClick={() => (onPick ? onPick(e) : setEditing(e))}>
-              <MonsterIcon entry={e} />
-              <span className="no">No.{e.no}</span>
-              <span className="name">{e.name}</span>
+        {shown.map((m) => (
+          <li key={m.id}>
+            <button className="tile" onClick={() => (onPick ? onPick(m) : setOpenId(m.id))}>
+              <MonsterIcon monster={m} />
+              {m.no !== undefined && <span className="no">No.{m.no}</span>}
+              <span className="name">{m.name}</span>
             </button>
           </li>
         ))}
